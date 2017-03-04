@@ -7,7 +7,7 @@ from inspect import currentframe
 class DebugTool:
     def __init__(self):
         try:
-            self.fd = open(r"C:\Users\JUNJI\Documents\Condingame\pyCharmProject\FantasticBits\input.txt")
+            self.fd = open(r"input.txt")
         except (ImportError, OSError):
             self.debug_mode = False
         else:
@@ -59,6 +59,23 @@ class Factory:
         #     production_per_cyborgs *= 1.5
         return production_per_cyborgs
 
+    def distance_to(self, factory):
+        """Returns distance from self to factory.
+        Variable 'links' must be set before called."""
+        for link in links:
+            if {link[0], link[1]} == {self.entity_id, factory.entity_id}:
+                return link[2]
+
+
+class Factories(list):
+    def find_bomb_target(self):
+        """Returns source and destination for the bombing operation.
+        Source: my factory closest to the target
+        Destination: opponent's factory that hold most cyborgs and production"""
+        dst = max((f for f in self if f.owner == -1), key=lambda x: (x.cyborgs, x.production))
+        src = min((f for f in self if f.owner == 1), key=lambda x: x.distance_to(dst))
+        return src, dst
+
 
 class Troop:
     def __init__(self, entity_id, owner, factory_from, factory_to, cyborgs, turns_to_arrive):
@@ -68,6 +85,10 @@ class Troop:
         self.factory_to = int(factory_to)
         self.cyborgs = int(cyborgs)
         self.turns_to_arrive = int(turns_to_arrive)
+
+
+class Troops(list):
+    pass
 
 
 DT = DebugTool()
@@ -82,14 +103,15 @@ for i in range(link_count):
 
 # Global Variables
 current_turn = 0
-defenders = 1
+defenders = 1  # Default number of base defender
 command = ""
+my_bombs = 2
 
 # Game Loop
 while True:
     entity_count = int(DT.input())  # the number of entities (e.g. factories and troops)
-    factories = []  # type: List[Factory]
-    troops = []  # type: List[Troop]
+    factories = Factories()
+    troops = Troops()
 
     for i in range(entity_count):
         entity_id, entity_type, arg_1, arg_2, arg_3, arg_4, arg_5 = DT.input().split()
@@ -99,13 +121,21 @@ while True:
             troops.append(Troop(entity_id, arg_1, arg_2, arg_3, arg_4, arg_5))
 
     # MAIN LOGIC
-    # Check if the opponent's factory exists
-    if [f for f in factories if f.owner != 1]:
+    # Check if my factory and the opponent's exists
+    owners = [f.owner for f in factories]
+    if owners.count(1) != 0 and owners.count(-1) != 0:
+        # Dispatch bomb when conditions match
+        src, dst = factories.find_bomb_target()  # type: Factory, Factory
+        if (my_bombs > 1 and dst.cyborgs > 15) or (my_bombs > 0 and dst.cyborgs > 30):
+            if len(command):
+                command += ";"
+            command += "BOMB {0} {1} ".format(src.entity_id, dst.entity_id)
+            my_bombs -= 1
 
         # Determine defending troop size
         if current_turn == 0:
             fct = max([f for f in factories if f.owner == 1], key=lambda f: f.cyborgs)  # type: Factory
-            defenders = int(fct.cyborgs / 2)
+            defenders = int(fct.cyborgs / 4)
 
         # For all of my factories
         for fct in [f for f in factories if f.owner == 1]:
