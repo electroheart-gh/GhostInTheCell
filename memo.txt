@@ -1,4 +1,14 @@
 ### PLAN ###
+Some ways to think of cost and cyborgs required for rating and operations
+
+Cost is (a)
+ (a) # of cybs required to send from other factory <- accepted
+ (b) # of cybs to be there
+
+Cyborgs_required is (a) and (d)
+ (a) include base garrison or (b) not
+ (c) include stationed cyborgs initially or (d) not
+
 
 
 
